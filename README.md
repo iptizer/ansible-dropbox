@@ -26,6 +26,29 @@
 
 ## Usage
 
-TODO After linking to Ansible Galaxy
+1. Install role
 
-Configure your variables, see ```default``` folder for example.
+```bash
+cd yourPlaybookFolder/
+ansible-galaxy install iptizer.ansible_dropbox
+```
+
+2. Create Playbook
+
+```bash
+vim dropbox.yml
+## something like
+- hosts: all
+  roles:
+    - iptizer.ansible_dropbox
+```
+
+3. Configure your Variables, or leave default and run playbook.
+
+```bash
+ansible-plabook dropbox.yml -l <<your destination host>>
+```
+
+4. Due to default setting unattended=false, playbook will stop and prompt a URL. Click it and press ENTER.
+
+That's it.
