@@ -99,5 +99,3 @@
   shell: "su - {{ dropbox_user }} -c \"{{ dropbox_home }}/.dropbox-dist/dropbox.py exclude add {{ dropbox_exclude_todo | join('') }}\""
   when: "dropbox_exclude_todo is defined"
   tags: excludeonly
-
-
