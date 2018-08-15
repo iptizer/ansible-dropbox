@@ -1,0 +1,16 @@
+[Unit]
+Description=Dropbox for User {{ dropbox_user }}
+Wants=network.target
+After=network.target
+
+[Service]
+Type=simple
+User={{ dropbox_user }}
+Group={{ dropbox_group }}
+ExecStart={{ dropbox_home }}/.dropbox-dist/dropboxd start
+ExecStop={{ dropbox_home }}/.dropbox-dist/dropboxd stop
+RemainAfterExit=yes
+WorkingDirectory={{ dropbox_home }}
+
+[Install]
+WantedBy=multi-user.target

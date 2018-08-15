@@ -1,0 +1,103 @@
+---
+
+- name: ensure user group exists
+  group:
+    name: "{{ dropbox_user }}"
+    
+- name: ensure user exists
+  user:
+    name: "{{ dropbox_user }}"
+    group: "{{ dropbox_user }}"
+    home: "{{ dropbox_home }}"
+
+- name: Download Dropbox binary
+  get_url:
+    url: "{{ dropbox_rpm_url }}"
+    dest: "/tmp/"
+  register: dropbox_download
+
+- name: unarchive Dropbox binary
+  unarchive:
+    src: "{{ dropbox_download.dest }}"
+    remote_src: true
+    dest: "{{ dropbox_home }}"
+  register: dropbox_unarchive
+
+- name: Download Dropbox python script
+  get_url:
+    url: "https://www.dropbox.com/download?dl=packages/dropbox.py"
+    dest: "{{ dropbox_home }}/.dropbox-dist/dropbox.py"
+    owner: "{{ dropbox_user }}"
+    group: "{{ dropbox_group }}"
+    mode: 01744
+
+- name: Ensure Dropbox directories exist
+  file:
+    state: directory
+    name: "{{ item }}"
+    owner: "{{ dropbox_user }}"
+    group: "{{ dropbox_group }}"
+  with_items:
+    - "{{ dropbox_home }}/.dropbox/"
+    - "{{ dropbox_home }}/Dropbox/"
+
+- name: template systemd service file
+  template:
+    src: "dropbox.service.j2"
+    dest: "/usr/lib/systemd/system/dropbox_{{ dropbox_user }}.service"
+  notify:
+    - restart dropbox
+
+- name: Increase max_user_watches
+  lineinfile:
+    dest: /etc/sysctl.conf
+    line: "fs.inotify.max_user_watches=100000"
+    regexp: "^.*fs.inotify.max_user_watches="
+  register: sysctl_result
+
+- name: refresh sysctl
+  command: sysctl -p
+  when: sysctl_result.changed
+
+- meta: flush_handlers
+
+- name: Giving Dropbox 10 seconds to start (and produce logs to grep on)
+  pause:
+    seconds: 10
+
+- name: Checking whether device already linked
+  shell: journalctl --since "1 minutes ago" | grep -E 'dropbox.*Please visit .* to link this device' | grep -v ansible-command | tail -1
+  register: dropbox_check_linked
+  changed: false
+
+- name: Device not yet linked
+  debug:
+    msg: 
+      - "Device not registered, visit URL (one line below), then continue."
+      - "{{ dropbox_check_linked.stdout_lines[0] }}"
+  when: dropbox_check_linked.stdout != ""
+
+- name: Continue when device has been linked, or exit and re-run the role afterwards
+  pause:
+  when: not dropbox_unattended and dropbox_check_linked.stdout != ""
+
+- name: Getting current exclude list
+  shell:  "su - {{ dropbox_user }} -c \"{{ dropbox_home }}/.dropbox-dist/dropbox.py exclude list\""
+  register: dropbox_exclude_current
+  changed: false
+  tags: excludeonly
+
+- name: "Creating string of directories to exclude"
+  set_fact:
+    dropbox_exclude_todo: "{{ dropbox_exclude_todo | default('') }} '{{ item }}'"
+  when: "item not in dropbox_exclude_current.stdout"
+  with_items:
+    - "{{ dropbox_exclude }}"
+  tags: excludeonly
+
+- name: "Excluding directories.... (This may take a long time)"
+  shell: "su - {{ dropbox_user }} -c \"{{ dropbox_home }}/.dropbox-dist/dropbox.py exclude add {{ dropbox_exclude_todo | join('') }}\""
+  when: "dropbox_exclude_todo is defined"
+  tags: excludeonly
+
+

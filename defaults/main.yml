@@ -1,0 +1,8 @@
+dropbox_user: "dropbox"
+dropbox_group: "{{ dropbox_user }}"
+dropbox_home: "/home/{{ dropbox_user }}"
+dropbox_arch: "x86_64"
+dropbox_rpm_url: "https://www.dropbox.com/download?plat=lnx.{{ dropbox_arch }}"
+
+dropbox_exclude:
+        - Dropbox/Private
