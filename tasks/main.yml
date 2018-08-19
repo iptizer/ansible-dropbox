@@ -22,6 +22,8 @@
     remote_src: true
     dest: "{{ dropbox_home }}"
   register: dropbox_unarchive
+  notify: 
+  - restart dropbox
 
 - name: Download Dropbox python script
   get_url:
@@ -38,15 +40,15 @@
     owner: "{{ dropbox_user }}"
     group: "{{ dropbox_group }}"
   with_items:
-    - "{{ dropbox_home }}/.dropbox/"
-    - "{{ dropbox_home }}/Dropbox/"
+  - "{{ dropbox_home }}/.dropbox/"
+  - "{{ dropbox_home }}/Dropbox/"
 
 - name: template systemd service file
   template:
     src: "dropbox.service.j2"
     dest: "/usr/lib/systemd/system/dropbox_{{ dropbox_user }}.service"
   notify:
-    - restart dropbox
+  - restart dropbox
 
 - name: Increase max_user_watches
   lineinfile:
@@ -73,8 +75,8 @@
 - name: Device not yet linked
   debug:
     msg: 
-      - "Device not registered, visit URL (one line below), then continue."
-      - "{{ dropbox_check_linked.stdout_lines[0] }}"
+    - "Device not registered, visit URL (one line below), then continue."
+    - "{{ dropbox_check_linked.stdout_lines[0] }}"
   when: dropbox_check_linked.stdout != ""
 
 - name: Continue when device has been linked, or exit and re-run the role afterwards
@@ -92,7 +94,7 @@
     dropbox_exclude_todo: "{{ dropbox_exclude_todo | default('') }} '{{ item }}'"
   when: "item not in dropbox_exclude_current.stdout"
   with_items:
-    - "{{ dropbox_exclude }}"
+  - "{{ dropbox_exclude }}"
   tags: excludeonly
 
 - name: "Excluding directories.... (This may take a long time)"
