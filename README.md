@@ -52,3 +52,8 @@ ansible-plabook dropbox.yml -l <<your destination host>>
 4. Due to default setting unattended=false, playbook will stop and prompt a URL. Click it and press ENTER.
 
 That's it.
+
+## Misc
+
+* I wrote a [short blogpost](https://iptize.it/post/2018-08-19-ansible-role-ansible-dropbox/) surrounding this role.
+* Feel free to open Issues at all time!
